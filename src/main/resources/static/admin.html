@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>생일 펀딩 관리자 페이지</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+    th { background-color: #f4f4f4; }
+    .btn-approve { background: #4caf50; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+    .status-completed { color: #4caf50; font-weight: bold; }
+    .status-pending { color: #ff9800; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<h2>👑 생일 펀딩 입금 관리자 페이지</h2>
+<p>친구들이 입금 신청한 내역을 확인하고 [승인] 버튼을 누르면 게이지에 즉시 반영됩니다.</p>
+
+<table>
+  <thead>
+  <tr>
+    <th>이름</th>
+    <th>금액</th>
+    <th>축하 메시지</th>
+    <th>상태</th>
+    <th>관리</th>
+  </tr>
+  </thead>
+  <tbody id="contributionList">
+  <!-- 자바스크립트로 내역이 채워집니다 -->
+  </tbody>
+</table>
+
+<script>
+  const roomId = 1;
+
+  async function loadAdminData() {
+    const response = await fetch(`/api/funding/${roomId}/admin/contributions`);
+    const list = await response.json();
+
+    const tbody = document.getElementById('contributionList');
+    tbody.innerHTML = '';
+
+    list.forEach(item => {
+      const tr = document.createElement('tr');
+
+      const isCompleted = item.status === 'COMPLETED';
+      const statusHtml = isCompleted
+              ? `<span class="status-completed">완료</span>`
+              : `<span class="status-pending">대기</span>`;
+
+      const actionHtml = isCompleted
+              ? `승인 완료`
+              : `<button class="btn-approve" onclick="approve(${item.id})">입금 승인</button>`;
+
+      tr.innerHTML = `
+                    <td>${item.contributorName}</td>
+                    <td>${item.amount.toLocaleString()}원</td>
+                    <td>${item.message || '-'}</td>
+                    <td>${statusHtml}</td>
+                    <td>${actionHtml}</td>
+                `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function approve(contributionId) {
+    const response = await fetch(`/api/funding/contributions/${contributionId}/approve`, {
+      method: 'POST'
+    });
+
+    if (response.ok) {
+      alert('입금 승인이 완료되었습니다!');
+      loadAdminData(); // 목록 새로고침
+    }
+  }
+
+  loadAdminData();
+</script>
+</body>
+</html>
